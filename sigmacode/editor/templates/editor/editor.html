@@ -1,0 +1,129 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python Code Editor</title>
+    <link rel="stylesheet" type="text/css" href="{% static 'css/styles.css' %}"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/material.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/python/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/htmlmixed/htmlmixed.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/edit/closebrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/edit/closetag.min.js"></script>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            margin: 0;
+        }
+        form {
+            flex: 1; /* Allow form to take all remaining space */
+            display: flex;
+            flex-direction: column;
+        }
+        #editor {
+            flex: 1; /* Allow the editor to take up remaining space */
+            width: 100%;
+            border: 1px solid #ccc; /* Optional: add a border to visually separate the editor */
+        }
+        .buttons {
+            margin-top: 10px; /* Space above the buttons */
+            display: flex; /* Arrange buttons horizontally */
+            gap: 10px; /* Space between buttons */
+        }
+        #output {
+            height: 150px; /* Fixed height for the output area, can be adjusted as needed */
+            overflow-y: auto; /* Enable scrolling for overflowing content */
+            border: 1px solid #ccc; /* Optional: add a border around the output */
+        }
+        .CodeMirror {
+            height: 100% !important; /* Ensure CodeMirror occupies 100% of its container */
+            flex: 1; /* Make sure it grows to fill the space */
+        }
+
+        /* Custom styles for line numbers */
+        .CodeMirror-gutter {
+            background-color: #f7f7f7; /* Optional: change the gutter background color */
+        }
+        .CodeMirror-linenumber {
+            color: red; /* Change line numbers color to red */
+        }
+    </style>
+</head>
+<body>
+    <h1>Code Editor</h1>
+    <label for="language-select">Select Language:</label>
+    <select id="language-select" onchange="changeLanguage()">
+        <option value="python">Python</option>
+        <option value="javascript">JavaScript</option>
+        <option value="htmlmixed">HTML</option>
+        <option value="css">CSS</option>
+    </select>
+    
+    <form method="post">
+        {% csrf_token %}
+        <div id="editor">
+            <textarea id="code" name="code" style="display: none;">{{ form.code.value|default_if_none:"" }}</textarea>
+        </div>
+        <div class="buttons">
+            <button type="submit">Run Code</button>
+            <button type="button" onclick="saveFile()">Save Code</button>
+            <button type="button" onclick="copyToClipboard()">Copy to Clipboard</button>
+        </div>
+    </form>
+    
+    <div id="output">
+        {% if output %}
+            <h2>Output:</h2>
+            <pre class="{{ message_class }}">{{ output }}</pre>
+        {% endif %}
+    </div>
+
+    <script>
+        // Initialize CodeMirror
+        let editor = CodeMirror.fromTextArea(document.getElementById("code"), {
+            lineNumbers: true,
+            mode: "text/x-python", // Default mode is Python
+            theme: "material",
+            autoCloseBrackets: true,
+            indentUnit: 4,
+            smartIndent: true,
+            tabSize: 4,
+            lineWrapping: true,
+            viewportMargin: Infinity // Allows CodeMirror to take up the height properly
+        });
+
+        // Function to change language mode
+        function changeLanguage() {
+            const lang = document.getElementById("language-select").value;
+            editor.setOption("mode", lang === "htmlmixed" ? "text/html" : "text/x-" + lang);
+        }
+
+        // Save function to save code to a file
+        function saveFile() {
+            const code = editor.getValue();
+            const blob = new Blob([code], { type: 'text/plain' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'code.' + document.getElementById("language-select").value; // Set the file extension based on the language
+            link.click();
+        }
+
+        // Copy to clipboard function
+        function copyToClipboard() {
+            const code = editor.getValue();
+            navigator.clipboard.writeText(code).then(() => {
+                alert('Code copied to clipboard!');
+            }, (err) => {
+                console.error('Could not copy text: ', err);
+            });
+        }
+    </script>
+</body>
+</html>
